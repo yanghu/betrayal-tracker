@@ -143,7 +143,7 @@
         const STORAGE_KEY = 'betrayalGameState';
 
         const characters = [
-            { name: "Darrin Williams (飞毛腿)", color: "border-red-500", bgColor: "bg-red-900", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 6, 6, 7], start: 4 }, speed: { name: "速度", scale: ['�', 4, 4, 4, 5, 6, 7, 7, 8], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 3, 3, 4, 5, 5, 5, 7], start: 4 }, sanity: { name: "神志", scale: ['💀', 1, 2, 3, 4, 5, 5, 5, 7], start: 4 }}},
+            { name: "Darrin Williams (飞毛腿)", color: "border-red-500", bgColor: "bg-red-900", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 6, 6, 7], start: 4 }, speed: { name: "速度", scale: ['💀', 4, 4, 4, 5, 6, 7, 7, 8], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 3, 3, 4, 5, 5, 5, 7], start: 4 }, sanity: { name: "神志", scale: ['💀', 1, 2, 3, 4, 5, 5, 5, 7], start: 4 }}},
             { name: "Ox Bellows (莽撞大汉)", color: "border-red-500", bgColor: "bg-red-900", stats: { might: { name: "力量", scale: ['💀', 4, 5, 5, 6, 6, 7, 8, 8], start: 4 }, speed: { name: "速度", scale: ['💀', 2, 2, 2, 3, 4, 5, 5, 6], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 2, 2, 3, 3, 5, 5, 6], start: 4 }, sanity: { name: "神志", scale: ['💀', 2, 2, 3, 4, 5, 5, 6, 7], start: 4 }}},
             { name: "Prof. Longfellow (睿智教授)", color: "border-green-500", bgColor: "bg-green-900", stats: { might: { name: "力量", scale: ['💀', 1, 2, 2, 3, 4, 5, 6, 7], start: 3 }, speed: { name: "速度", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 8], start: 3 }, knowledge: { name: "知识", scale: ['💀', 4, 5, 5, 6, 7, 8, 8, 8], start: 3 }, sanity: { name: "神志", scale: ['💀', 1, 3, 3, 4, 5, 6, 7, 8], start: 3 }}},
             { name: "Father Rhinehardt (莱因哈特神父)", color: "border-green-500", bgColor: "bg-green-900", stats: { might: { name: "力量", scale: ['💀', 1, 2, 2, 4, 4, 5, 5, 6], start: 3 }, speed: { name: "速度", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 7], start: 3 }, knowledge: { name: "知识", scale: ['💀', 1, 3, 3, 4, 5, 6, 8, 8], start: 4 }, sanity: { name: "神志", scale: ['💀', 3, 4, 5, 5, 6, 7, 8, 8], start: 5 }}},
@@ -167,7 +167,6 @@
             trackerScreen: document.getElementById('tracker-screen'),
             characterList: document.getElementById('character-list'),
             characterName: document.getElementById('character-name'),
-            characterHeader: document.getElementById('character-header'),
             headerSeparator: document.getElementById('header-separator'),
             statsGrid: document.getElementById('stats-grid'),
             backButton: document.getElementById('back-to-selection'),
@@ -186,10 +185,8 @@
             try {
                 if (state.selectedCharacterIndex !== null) {
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-                    console.log('State Saved:', JSON.stringify(state));
                 } else {
                     localStorage.removeItem(STORAGE_KEY);
-                    console.log('State Cleared.');
                 }
             } catch (error) {
                 console.error("Failed to save state:", error);
@@ -197,7 +194,6 @@
         }
 
         function resetApp() {
-            console.log('Resetting application state.');
             state = { selectedCharacterIndex: null, hauntStarted: false, currentStatIndices: null };
             saveState();
             renderSelectionScreen();
@@ -228,7 +224,6 @@
             dom.characterName.textContent = character.name;
             dom.characterName.className = `text-2xl font-bold ${textColorClass}`;
             dom.headerSeparator.className = `border-b-2 ${character.color} my-2`;
-
             dom.statsGrid.innerHTML = '';
             
             Object.keys(character.stats).forEach(statKey => {
@@ -258,6 +253,7 @@
         
         function updateStatDisplay(statKey) {
             const character = characters[state.selectedCharacterIndex];
+            if (!character) return;
             const statData = character.stats[statKey];
             const currentIndex = state.currentStatIndices[statKey];
             const currentValue = statData.scale[currentIndex];
@@ -265,30 +261,35 @@
             const card = dom.statsGrid.querySelector(`[data-stat-key="${statKey}"]`);
             if (!card) return;
 
-            card.querySelector('[data-role="value-display"]').textContent = currentValue;
+            const valueDisplay = card.querySelector('[data-role="value-display"]');
+            if(valueDisplay) valueDisplay.textContent = currentValue;
             
             const scaleContainer = card.querySelector('[data-role="scale-container"]');
-            scaleContainer.innerHTML = statData.scale.map((value, index) => {
-                const classes = [
-                    'stat-scale-value', 'inline-block', 'text-center', 'text-xs', 'w-5', 'h-5', 'leading-5', 'rounded-full', 'text-gray-500',
-                    index === currentIndex ? 'current-scale-value text-white bg-gray-600' : '',
-                    index === statData.start ? 'start-scale-value text-green-400' : '',
-                    index === 0 ? 'skull-scale-value text-red-500' : ''
-                ].join(' ');
-                return `<div class="${classes}">${value}</div>`;
-            }).join('');
-
+            if(scaleContainer) {
+                scaleContainer.innerHTML = statData.scale.map((value, index) => {
+                    const classes = [
+                        'stat-scale-value', 'inline-block', 'text-center', 'text-xs', 'w-5', 'h-5', 'leading-5', 'rounded-full', 'text-gray-500',
+                        index === currentIndex ? 'current-scale-value text-white bg-gray-600' : '',
+                        index === statData.start ? 'start-scale-value text-green-400' : '',
+                        index === 0 ? 'skull-scale-value text-red-500' : ''
+                    ].join(' ');
+                    return `<div class="${classes}">${value}</div>`;
+                }).join('');
+            }
+            
             const canDecrease = state.hauntStarted ? currentIndex > 0 : currentIndex > 1;
             const canIncrease = currentIndex < statData.scale.length - 1;
             const decreaseBtn = card.querySelector('[data-op="decrease"]');
             const increaseBtn = card.querySelector('[data-op="increase"]');
-            decreaseBtn.disabled = !canDecrease;
-            increaseBtn.disabled = !canIncrease;
-            decreaseBtn.classList.toggle('btn-disabled', !canDecrease);
-            increaseBtn.classList.toggle('btn-disabled', !canIncrease);
-            decreaseBtn.classList.toggle('hover:bg-gray-700', canDecrease);
-            increaseBtn.classList.toggle('hover:bg-gray-700', canIncrease);
-            
+            if (decreaseBtn && increaseBtn) {
+                 decreaseBtn.disabled = !canDecrease;
+                 increaseBtn.disabled = !canIncrease;
+                 decreaseBtn.classList.toggle('btn-disabled', !canDecrease);
+                 increaseBtn.classList.toggle('btn-disabled', !canIncrease);
+                 decreaseBtn.classList.toggle('hover:bg-gray-700', canDecrease);
+                 increaseBtn.classList.toggle('hover:bg-gray-700', canIncrease);
+            }
+
             const isDead = Object.values(state.currentStatIndices).some(idx => idx === 0);
             dom.characterStatus.textContent = isDead ? '角色已死亡' : '';
         }
@@ -308,6 +309,7 @@
             if (!card) return;
             const valueDisplay = card.querySelector('.value-display-container');
             const indicator = card.querySelector('[data-role="indicator"]');
+            if (!valueDisplay || !indicator) return;
             
             valueDisplay.classList.remove('is-increasing', 'is-decreasing');
             void valueDisplay.offsetWidth;
@@ -345,7 +347,6 @@
         }
 
         function initializeCharacterState(index) {
-            console.log(`Initializing state for character index: ${index}`);
             state.selectedCharacterIndex = index;
             const character = characters[index];
             state.currentStatIndices = {};
@@ -359,69 +360,76 @@
         }
         
         function handleCharacterSelection(e) {
-            const card = e.target.closest('.character-card');
-            if (!card) return;
-            const index = parseInt(card.dataset.index, 10);
-            if (state.selectedCharacterIndex !== null && index !== state.selectedCharacterIndex) {
-                showModal("选择新角色将清空当前进度。确定吗？", () => initializeCharacterState(index));
-            } else if (state.selectedCharacterIndex === null) {
-                initializeCharacterState(index);
+            try {
+                const card = e.target.closest('.character-card');
+                if (!card) return;
+                const index = parseInt(card.dataset.index, 10);
+                if (state.selectedCharacterIndex !== null && index !== state.selectedCharacterIndex) {
+                    showModal("选择新角色将清空当前进度。确定吗？", () => initializeCharacterState(index));
+                } else if (state.selectedCharacterIndex === null) {
+                    initializeCharacterState(index);
+                }
+            } catch (error) {
+                console.error("Error in handleCharacterSelection:", error);
             }
         }
 
         function handleBackToSelection() {
-            showModal("确定要结束追踪并返回主菜单吗？", resetApp);
+            try {
+                showModal("确定要结束追踪并返回主菜单吗？", resetApp);
+            } catch (error) {
+                console.error("Error in handleBackToSelection:", error);
+            }
         }
 
         function handleStatChange(e) {
-            const button = e.target.closest('button[data-op]');
-            if (!button || button.disabled) return;
-            
-            const card = button.closest('.stat-card[data-stat-key]');
-            if (!card) return;
+            try {
+                const button = e.target.closest('button[data-op]');
+                if (!button || button.disabled) return;
+                
+                const card = button.closest('.stat-card[data-stat-key]');
+                if (!card) return;
 
-            const operation = button.dataset.op;
-            const statKey = card.dataset.statKey;
-            
-            state.currentStatIndices[statKey] += (operation === 'increase' ? 1 : -1);
-            console.log(`Stat Change: ${statKey} ${operation}. New index: ${state.currentStatIndices[statKey]}`);
-            saveState();
-            updateStatDisplay(statKey);
-            triggerFeedback(statKey, operation);
+                const operation = button.dataset.op;
+                const statKey = card.dataset.statKey;
+                
+                state.currentStatIndices[statKey] += (operation === 'increase' ? 1 : -1);
+                saveState();
+                updateStatDisplay(statKey);
+                triggerFeedback(statKey, operation);
+            } catch(error) {
+                console.error("Error in handleStatChange:", error);
+            }
         }
 
         function handleHauntToggle() {
-            state.hauntStarted = dom.hauntToggle.checked;
-            console.log(`Haunt status changed to: ${state.hauntStarted}`);
-            saveState();
-            updateHauntDisplay();
-            Object.keys(characters[state.selectedCharacterIndex].stats).forEach(updateStatDisplay);
+            try {
+                state.hauntStarted = dom.hauntToggle.checked;
+                saveState();
+                updateHauntDisplay();
+                if (state.selectedCharacterIndex !== null) {
+                    Object.keys(characters[state.selectedCharacterIndex].stats).forEach(updateStatDisplay);
+                }
+            } catch(error) {
+                console.error("Error in handleHauntToggle:", error);
+            }
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('App Initializing...');
             const savedStateJSON = localStorage.getItem(STORAGE_KEY);
             if (savedStateJSON) {
-                console.log('Found saved state in localStorage:', savedStateJSON);
                 try {
                     const parsedState = JSON.parse(savedStateJSON);
                     if (parsedState && typeof parsedState.selectedCharacterIndex === 'number' && parsedState.currentStatIndices) {
                         state = parsedState;
-                        console.log('State successfully loaded. Rendering tracker screen.');
                         renderTrackerScreen();
                         return;
-                    } else {
-                         console.log('Saved data is invalid. Resetting and rendering selection screen.');
-                         resetApp();
                     }
                 } catch (e) {
-                    console.error('Error parsing saved state. Resetting.', e);
-                    resetApp();
+                    localStorage.removeItem(STORAGE_KEY);
                 }
-            } else {
-                console.log('No saved state found. Rendering selection screen.');
-                renderSelectionScreen();
             }
+            renderSelectionScreen();
 
             dom.characterList.addEventListener('click', handleCharacterSelection);
             dom.backButton.addEventListener('click', handleBackToSelection);
