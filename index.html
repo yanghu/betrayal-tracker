@@ -2,28 +2,28 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>山中小屋 角色属性追踪器</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Noto Sans SC', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        .stat-value {
+        .stat-scale-value {
             transition: all 0.2s ease-in-out;
         }
-        .current-value {
-            transform: scale(1.2);
+        .current-scale-value {
+            transform: scale(1.1);
             font-weight: 700;
         }
-        .start-value {
+        .start-scale-value {
             text-shadow: 0 0 8px rgba(34, 197, 94, 0.7);
         }
-        .skull-value {
+        .skull-scale-value {
              filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.7));
         }
         .btn-disabled {
@@ -38,6 +38,40 @@
         }
         #confirmation-modal {
             transition: opacity 0.3s ease-in-out;
+        }
+        .stat-card {
+            aspect-ratio: 1 / 1;
+        }
+        
+        .value-display-container {
+            transition: transform 0.2s ease;
+        }
+        
+        @keyframes flash-increase {
+            0% { transform: scale(1); text-shadow: none; }
+            50% { transform: scale(1.2); text-shadow: 0 0 12px rgba(34, 197, 94, 0.9); color: #4ade80; }
+            100% { transform: scale(1); text-shadow: none; }
+        }
+        .is-increasing {
+            animation: flash-increase 0.4s ease-in-out;
+        }
+
+        @keyframes flash-decrease {
+            0% { transform: scale(1); text-shadow: none; }
+            50% { transform: scale(0.8); text-shadow: 0 0 12px rgba(239, 68, 68, 0.9); color: #f87171;}
+            100% { transform: scale(1); text-shadow: none; }
+        }
+        .is-decreasing {
+            animation: flash-decrease 0.4s ease-in-out;
+        }
+
+        @keyframes fade-in-out {
+            0%, 100% { opacity: 0; transform: translateY(10px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+        }
+        .change-indicator.active {
+            display: block;
+            animation: fade-in-out 4s ease-in-out forwards;
         }
     </style>
 </head>
@@ -56,35 +90,38 @@
                     </svg>
                 </button>
             </header>
-            <div id="character-list" class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                <!-- 角色卡片将由JS动态生成 -->
-            </div>
+            <div id="character-list" class="grid grid-cols-2 md:grid-cols-3 gap-4"></div>
         </div>
 
         <!-- 属性追踪界面 -->
-        <div id="tracker-screen" class="hidden">
-            <header class="flex items-center justify-between mb-4">
-                <button id="back-to-selection" class="text-blue-400 hover:text-blue-300 transition-colors">&lt; 返回选择</button>
-                <div class="flex items-center space-x-2">
-                    <span id="haunt-label" class="text-gray-400 text-sm transition-colors duration-200">作祟开始?</span>
-                    <label for="haunt-toggle" class="flex items-center cursor-pointer">
-                        <div class="relative">
-                            <input type="checkbox" id="haunt-toggle" class="sr-only">
-                            <div id="haunt-toggle-bg" class="toggle-bg block bg-gray-600 w-10 h-6 rounded-full"></div>
-                            <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"></div>
-                        </div>
-                    </label>
+        <div id="tracker-screen" class="hidden flex flex-col h-screen max-h-screen p-4">
+             <header class="flex-shrink-0">
+                <div class="flex items-center justify-between">
+                    <button id="back-to-selection" class="p-2 -ml-2 text-blue-400 hover:text-blue-300 transition-colors">
+                         <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                         </svg>
+                    </button>
+                    <div class="flex items-center space-x-2">
+                        <span id="haunt-label" class="text-gray-400 text-sm transition-colors duration-200">作祟?</span>
+                        <label for="haunt-toggle" class="flex items-center cursor-pointer">
+                            <div class="relative">
+                                <input type="checkbox" id="haunt-toggle" class="sr-only">
+                                <div id="haunt-toggle-bg" class="toggle-bg block bg-gray-600 w-10 h-6 rounded-full"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition"></div>
+                            </div>
+                        </label>
+                    </div>
                 </div>
+                <div id="character-header" class="text-center py-2 my-2">
+                    <h2 id="character-name" class="text-2xl font-bold"></h2>
+                </div>
+                <div id="header-separator" class="border-b border-gray-700 my-2"></div>
             </header>
             
-            <div id="character-header" class="text-center p-4 rounded-lg mb-6">
-                <h2 id="character-name" class="text-2xl font-bold"></h2>
-            </div>
+            <main id="stats-grid" class="grid grid-cols-2 gap-3 flex-grow"></main>
 
-            <div id="stats-container" class="space-y-4">
-                <!-- 属性条将由JS动态生成 -->
-            </div>
-             <footer class="text-center mt-8">
+             <footer class="text-center mt-4 flex-shrink-0">
                 <p id="character-status" class="text-xl font-bold text-red-500 h-8"></p>
             </footer>
         </div>
@@ -100,14 +137,13 @@
                 </div>
             </div>
         </div>
-
     </div>
 
     <script>
         const STORAGE_KEY = 'betrayalGameState';
 
         const characters = [
-            { name: "Darrin Williams (飞毛腿)", color: "border-red-500", bgColor: "bg-red-900", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 6, 6, 7], start: 4 }, speed: { name: "速度", scale: ['💀', 4, 4, 4, 5, 6, 7, 7, 8], start: 4 }, knowledge: { name: "知识", scale: ['�', 2, 3, 3, 4, 5, 5, 5, 7], start: 4 }, sanity: { name: "神志", scale: ['💀', 1, 2, 3, 4, 5, 5, 5, 7], start: 4 }}},
+            { name: "Darrin Williams (飞毛腿)", color: "border-red-500", bgColor: "bg-red-900", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 6, 6, 7], start: 4 }, speed: { name: "速度", scale: ['�', 4, 4, 4, 5, 6, 7, 7, 8], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 3, 3, 4, 5, 5, 5, 7], start: 4 }, sanity: { name: "神志", scale: ['💀', 1, 2, 3, 4, 5, 5, 5, 7], start: 4 }}},
             { name: "Ox Bellows (莽撞大汉)", color: "border-red-500", bgColor: "bg-red-900", stats: { might: { name: "力量", scale: ['💀', 4, 5, 5, 6, 6, 7, 8, 8], start: 4 }, speed: { name: "速度", scale: ['💀', 2, 2, 2, 3, 4, 5, 5, 6], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 2, 2, 3, 3, 5, 5, 6], start: 4 }, sanity: { name: "神志", scale: ['💀', 2, 2, 3, 4, 5, 5, 6, 7], start: 4 }}},
             { name: "Prof. Longfellow (睿智教授)", color: "border-green-500", bgColor: "bg-green-900", stats: { might: { name: "力量", scale: ['💀', 1, 2, 2, 3, 4, 5, 6, 7], start: 3 }, speed: { name: "速度", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 8], start: 3 }, knowledge: { name: "知识", scale: ['💀', 4, 5, 5, 6, 7, 8, 8, 8], start: 3 }, sanity: { name: "神志", scale: ['💀', 1, 3, 3, 4, 5, 6, 7, 8], start: 3 }}},
             { name: "Father Rhinehardt (莱因哈特神父)", color: "border-green-500", bgColor: "bg-green-900", stats: { might: { name: "力量", scale: ['💀', 1, 2, 2, 4, 4, 5, 5, 6], start: 3 }, speed: { name: "速度", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 7], start: 3 }, knowledge: { name: "知识", scale: ['💀', 1, 3, 3, 4, 5, 6, 8, 8], start: 4 }, sanity: { name: "神志", scale: ['💀', 3, 4, 5, 5, 6, 7, 8, 8], start: 5 }}},
@@ -121,29 +157,31 @@
             { name: "Heather Granville (高傲贵妇)", color: "border-purple-500", bgColor: "bg-purple-900", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 8], start: 3 }, speed: { name: "速度", scale: ['💀', 3, 3, 4, 5, 6, 7, 8, 8], start: 2 }, knowledge: { name: "知识", scale: ['💀', 2, 3, 4, 5, 6, 7, 8, 8], start: 4 }, sanity: { name: "神志", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 8], start: 5 }}},
         ];
 
-        let state = {
-            selectedCharacterIndex: null,
-            hauntStarted: false,
-            currentStatIndices: null
+        let state = { selectedCharacterIndex: null, hauntStarted: false, currentStatIndices: null };
+        let pendingChanges = {};
+        let changeTimers = {};
+
+        const dom = {
+            appContainer: document.getElementById('app'),
+            selectionScreen: document.getElementById('selection-screen'),
+            trackerScreen: document.getElementById('tracker-screen'),
+            characterList: document.getElementById('character-list'),
+            characterName: document.getElementById('character-name'),
+            characterHeader: document.getElementById('character-header'),
+            headerSeparator: document.getElementById('header-separator'),
+            statsGrid: document.getElementById('stats-grid'),
+            backButton: document.getElementById('back-to-selection'),
+            hauntToggle: document.getElementById('haunt-toggle'),
+            hauntToggleBg: document.getElementById('haunt-toggle-bg'),
+            hauntLabel: document.getElementById('haunt-label'),
+            characterStatus: document.getElementById('character-status'),
+            hauntToggleDot: document.querySelector('label[for="haunt-toggle"] .dot'),
+            resetAppButton: document.getElementById('reset-app-button'),
+            modal: document.getElementById('confirmation-modal'),
+            modalConfirm: document.getElementById('modal-confirm'),
+            modalCancel: document.getElementById('modal-cancel'),
         };
 
-        const selectionScreen = document.getElementById('selection-screen');
-        const trackerScreen = document.getElementById('tracker-screen');
-        const characterList = document.getElementById('character-list');
-        const characterNameEl = document.getElementById('character-name');
-        const characterHeaderEl = document.getElementById('character-header');
-        const statsContainer = document.getElementById('stats-container');
-        const backButton = document.getElementById('back-to-selection');
-        const hauntToggle = document.getElementById('haunt-toggle');
-        const hauntToggleBg = document.getElementById('haunt-toggle-bg');
-        const hauntLabel = document.getElementById('haunt-label');
-        const characterStatusEl = document.getElementById('character-status');
-        const hauntToggleDot = document.querySelector('label[for="haunt-toggle"] .dot');
-        const resetAppButton = document.getElementById('reset-app-button');
-        const modal = document.getElementById('confirmation-modal');
-        const modalConfirm = document.getElementById('modal-confirm');
-        const modalCancel = document.getElementById('modal-cancel');
-        
         function saveState() {
             try {
                 if (state.selectedCharacterIndex !== null) {
@@ -166,7 +204,8 @@
         }
 
         function renderSelectionScreen() {
-            characterList.innerHTML = '';
+            dom.appContainer.classList.add('p-4');
+            dom.characterList.innerHTML = '';
             const displayOrder = [0, 1, 6, 7, 2, 3, 4, 5, 10, 11, 8, 9];
             const orderedCharacters = displayOrder.map(i => ({...characters[i], originalIndex: i}));
             orderedCharacters.forEach(charData => {
@@ -174,74 +213,134 @@
                 card.className = `character-card p-4 rounded-lg transition-all duration-200 transform hover:scale-105 border-2 ${charData.color} ${charData.bgColor}`;
                 card.dataset.index = charData.originalIndex;
                 card.innerHTML = `<h3 class="font-bold text-center text-lg">${charData.name}</h3>`;
-                characterList.appendChild(card);
+                dom.characterList.appendChild(card);
             });
-            trackerScreen.classList.add('hidden');
-            selectionScreen.classList.remove('hidden');
+            dom.trackerScreen.classList.add('hidden');
+            dom.selectionScreen.classList.remove('hidden');
         }
 
         function renderTrackerScreen() {
-            if (state.selectedCharacterIndex === null) {
-                console.warn('renderTrackerScreen called with no character selected.');
-                renderSelectionScreen();
-                return;
-            };
+            if (state.selectedCharacterIndex === null) return;
+            dom.appContainer.classList.remove('p-4'); 
             const character = characters[state.selectedCharacterIndex];
-            characterNameEl.textContent = character.name;
-            characterHeaderEl.className = `text-center p-4 rounded-lg mb-6 border-2 ${character.color} ${character.bgColor}`;
-            statsContainer.innerHTML = '';
-            let isDead = false;
-            for (const statKey in character.stats) {
-                const statData = character.stats[statKey];
-                const currentIndex = state.currentStatIndices[statKey];
-                if (currentIndex === 0) { isDead = true; }
-                const statWrapper = document.createElement('div');
-                statWrapper.className = `p-3 rounded-lg bg-gray-800 border border-gray-700`;
-                let valuesHTML = statData.scale.map((value, index) => {
-                    const isCurrent = index === currentIndex;
-                    const isStart = index === statData.start;
-                    const isSkull = index === 0;
-                    let classes = 'stat-value inline-block text-center w-8 h-8 leading-8 rounded-full text-gray-400';
-                    if (isCurrent) classes += ' current-value text-white bg-gray-600';
-                    if (isStart) classes += ' start-value text-green-400';
-                    if(isSkull) classes += ' skull-value text-red-500';
-                    return `<div class="${classes}">${value}</div>`;
-                }).join('');
-                const canDecrease = state.hauntStarted ? currentIndex > 0 : currentIndex > 1;
-                const canIncrease = currentIndex < statData.scale.length - 1;
-                statWrapper.innerHTML = `<div class="flex justify-between items-center mb-3"><h4 class="text-lg font-bold">${statData.name}</h4><div class="flex items-center space-x-2"><button class="bg-red-600 text-white rounded-full w-8 h-8 font-bold text-2xl leading-none flex items-center justify-center ${!canDecrease ? 'btn-disabled' : 'hover:bg-red-500'}" data-stat="${statKey}" data-op="decrease" ${!canDecrease ? 'disabled' : ''}>-</button><button class="bg-green-600 text-white rounded-full w-8 h-8 font-bold text-2xl leading-none flex items-center justify-center ${!canIncrease ? 'btn-disabled' : 'hover:bg-green-500'}" data-stat="${statKey}" data-op="increase" ${!canIncrease ? 'disabled' : ''}>+</button></div></div><div class="flex justify-center space-x-1 flex-wrap">${valuesHTML}</div>`;
-                statsContainer.appendChild(statWrapper);
-            }
-            characterStatusEl.textContent = isDead ? '角色已死亡' : '';
-            hauntToggle.checked = state.hauntStarted;
-            if (state.hauntStarted) {
-                hauntToggleBg.classList.replace('bg-gray-600', 'bg-red-600');
-                hauntLabel.classList.replace('text-gray-400', 'text-red-500');
-                hauntToggleDot.style.transform = 'translateX(100%)';
-            } else {
-                hauntToggleBg.classList.replace('bg-red-600', 'bg-gray-600');
-                hauntLabel.classList.replace('text-red-500', 'text-gray-400');
-                hauntToggleDot.style.transform = 'translateX(0)';
-            }
-            selectionScreen.classList.add('hidden');
-            trackerScreen.classList.remove('hidden');
+            const textColorClass = character.color.replace('border-', 'text-');
+            
+            dom.characterName.textContent = character.name;
+            dom.characterName.className = `text-2xl font-bold ${textColorClass}`;
+            dom.headerSeparator.className = `border-b-2 ${character.color} my-2`;
+
+            dom.statsGrid.innerHTML = '';
+            
+            Object.keys(character.stats).forEach(statKey => {
+                const statCard = document.createElement('div');
+                statCard.className = `stat-card bg-gray-800 rounded-lg p-2 flex flex-col justify-between items-center border ${character.color} border-opacity-50`;
+                statCard.dataset.statKey = statKey;
+                statCard.innerHTML = `
+                    <h4 class="text-lg font-bold text-gray-300">${character.stats[statKey].name}</h4>
+                    <div class="flex items-center justify-center w-full my-auto relative">
+                        <button class="text-4xl font-light px-6 py-4 rounded-full" data-op="decrease">-</button>
+                        <div class="value-display-container relative">
+                           <div class="text-6xl font-medium mx-2 text-white" data-role="value-display"></div>
+                           <span class="change-indicator absolute -top-2 -right-2 text-lg font-bold hidden" data-role="indicator"></span>
+                        </div>
+                        <button class="text-4xl font-light px-6 py-4 rounded-full" data-op="increase">+</button>
+                    </div>
+                    <div class="flex justify-center space-x-1 flex-wrap" data-role="scale-container"></div>
+                `;
+                dom.statsGrid.appendChild(statCard);
+                updateStatDisplay(statKey);
+            });
+            
+            updateHauntDisplay();
+            dom.selectionScreen.classList.add('hidden');
+            dom.trackerScreen.classList.remove('hidden');
         }
         
+        function updateStatDisplay(statKey) {
+            const character = characters[state.selectedCharacterIndex];
+            const statData = character.stats[statKey];
+            const currentIndex = state.currentStatIndices[statKey];
+            const currentValue = statData.scale[currentIndex];
+            
+            const card = dom.statsGrid.querySelector(`[data-stat-key="${statKey}"]`);
+            if (!card) return;
+
+            card.querySelector('[data-role="value-display"]').textContent = currentValue;
+            
+            const scaleContainer = card.querySelector('[data-role="scale-container"]');
+            scaleContainer.innerHTML = statData.scale.map((value, index) => {
+                const classes = [
+                    'stat-scale-value', 'inline-block', 'text-center', 'text-xs', 'w-5', 'h-5', 'leading-5', 'rounded-full', 'text-gray-500',
+                    index === currentIndex ? 'current-scale-value text-white bg-gray-600' : '',
+                    index === statData.start ? 'start-scale-value text-green-400' : '',
+                    index === 0 ? 'skull-scale-value text-red-500' : ''
+                ].join(' ');
+                return `<div class="${classes}">${value}</div>`;
+            }).join('');
+
+            const canDecrease = state.hauntStarted ? currentIndex > 0 : currentIndex > 1;
+            const canIncrease = currentIndex < statData.scale.length - 1;
+            const decreaseBtn = card.querySelector('[data-op="decrease"]');
+            const increaseBtn = card.querySelector('[data-op="increase"]');
+            decreaseBtn.disabled = !canDecrease;
+            increaseBtn.disabled = !canIncrease;
+            decreaseBtn.classList.toggle('btn-disabled', !canDecrease);
+            increaseBtn.classList.toggle('btn-disabled', !canIncrease);
+            decreaseBtn.classList.toggle('hover:bg-gray-700', canDecrease);
+            increaseBtn.classList.toggle('hover:bg-gray-700', canIncrease);
+            
+            const isDead = Object.values(state.currentStatIndices).some(idx => idx === 0);
+            dom.characterStatus.textContent = isDead ? '角色已死亡' : '';
+        }
+        
+        function updateHauntDisplay() {
+            dom.hauntToggle.checked = state.hauntStarted;
+            const turnedOn = state.hauntStarted;
+            dom.hauntToggleBg.classList.toggle('bg-red-600', turnedOn);
+            dom.hauntToggleBg.classList.toggle('bg-gray-600', !turnedOn);
+            dom.hauntLabel.classList.toggle('text-red-500', turnedOn);
+            dom.hauntLabel.classList.toggle('text-gray-400', !turnedOn);
+            dom.hauntToggleDot.style.transform = turnedOn ? 'translateX(100%)' : 'translateX(0)';
+        }
+
+        function triggerFeedback(statKey, operation) {
+            const card = dom.statsGrid.querySelector(`[data-stat-key="${statKey}"]`);
+            if (!card) return;
+            const valueDisplay = card.querySelector('.value-display-container');
+            const indicator = card.querySelector('[data-role="indicator"]');
+            
+            valueDisplay.classList.remove('is-increasing', 'is-decreasing');
+            void valueDisplay.offsetWidth;
+            valueDisplay.classList.add(operation === 'increase' ? 'is-increasing' : 'is-decreasing');
+            
+            clearTimeout(changeTimers[statKey]);
+            pendingChanges[statKey] = (pendingChanges[statKey] || 0) + (operation === 'increase' ? 1 : -1);
+            
+            indicator.textContent = (pendingChanges[statKey] > 0 ? '+' : '') + pendingChanges[statKey];
+            indicator.classList.remove('active');
+            void indicator.offsetWidth;
+            indicator.classList.add('active');
+
+            changeTimers[statKey] = setTimeout(() => {
+                pendingChanges[statKey] = 0;
+            }, 4000);
+        }
+
         function showModal(message, confirmAction) {
             document.getElementById('modal-message').textContent = message;
-            modal.classList.remove('hidden');
-            setTimeout(() => modal.classList.remove('opacity-0'), 10);
-            modalConfirm.onclick = () => {
+            dom.modal.classList.remove('hidden');
+            setTimeout(() => dom.modal.classList.remove('opacity-0'), 10);
+            dom.modalConfirm.onclick = () => {
                 confirmAction();
                 hideModal();
             };
         }
 
         function hideModal() {
-            modal.classList.add('opacity-0');
+            dom.modal.classList.add('opacity-0');
             setTimeout(() => {
-                modal.classList.add('hidden');
-                modalConfirm.onclick = null;
+                dom.modal.classList.add('hidden');
+                dom.modalConfirm.onclick = null;
             }, 300);
         }
 
@@ -250,10 +349,11 @@
             state.selectedCharacterIndex = index;
             const character = characters[index];
             state.currentStatIndices = {};
-            for (const statKey in character.stats) {
+            Object.keys(character.stats).forEach(statKey => {
                 state.currentStatIndices[statKey] = character.stats[statKey].start;
-            }
+            });
             state.hauntStarted = false;
+            pendingChanges = {};
             saveState();
             renderTrackerScreen();
         }
@@ -262,53 +362,45 @@
             const card = e.target.closest('.character-card');
             if (!card) return;
             const index = parseInt(card.dataset.index, 10);
-
             if (state.selectedCharacterIndex !== null && index !== state.selectedCharacterIndex) {
-                showModal(
-                    "选择新角色将会清空当前角色的进度。确定要继续吗？",
-                    () => initializeCharacterState(index)
-                );
+                showModal("选择新角色将清空当前进度。确定吗？", () => initializeCharacterState(index));
             } else if (state.selectedCharacterIndex === null) {
                 initializeCharacterState(index);
-            } else if (index === state.selectedCharacterIndex) {
-                console.log(`Resuming session with character index: ${index}`);
-                renderTrackerScreen();
             }
         }
 
         function handleBackToSelection() {
-             showModal(
-                "确定要结束本次追踪并返回主菜单吗？",
-                () => {
-                    console.log("Session ended by user. Clearing state.");
-                    resetApp();
-                }
-            );
+            showModal("确定要结束追踪并返回主菜单吗？", resetApp);
         }
 
         function handleStatChange(e) {
-            const button = e.target.closest('button');
+            const button = e.target.closest('button[data-op]');
             if (!button || button.disabled) return;
-            const statKey = button.dataset.stat;
+            
+            const card = button.closest('.stat-card[data-stat-key]');
+            if (!card) return;
+
             const operation = button.dataset.op;
-            if (!statKey || !operation) return;
+            const statKey = card.dataset.statKey;
+            
             state.currentStatIndices[statKey] += (operation === 'increase' ? 1 : -1);
             console.log(`Stat Change: ${statKey} ${operation}. New index: ${state.currentStatIndices[statKey]}`);
             saveState();
-            renderTrackerScreen();
+            updateStatDisplay(statKey);
+            triggerFeedback(statKey, operation);
         }
 
         function handleHauntToggle() {
-            state.hauntStarted = hauntToggle.checked;
+            state.hauntStarted = dom.hauntToggle.checked;
             console.log(`Haunt status changed to: ${state.hauntStarted}`);
             saveState();
-            renderTrackerScreen();
+            updateHauntDisplay();
+            Object.keys(characters[state.selectedCharacterIndex].stats).forEach(updateStatDisplay);
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('--- App Initializing ---');
+            console.log('App Initializing...');
             const savedStateJSON = localStorage.getItem(STORAGE_KEY);
-
             if (savedStateJSON) {
                 console.log('Found saved state in localStorage:', savedStateJSON);
                 try {
@@ -317,9 +409,10 @@
                         state = parsedState;
                         console.log('State successfully loaded. Rendering tracker screen.');
                         renderTrackerScreen();
+                        return;
                     } else {
-                        console.warn('Saved data is invalid. Resetting state.');
-                        resetApp();
+                         console.log('Saved data is invalid. Resetting and rendering selection screen.');
+                         resetApp();
                     }
                 } catch (e) {
                     console.error('Error parsing saved state. Resetting.', e);
@@ -330,19 +423,15 @@
                 renderSelectionScreen();
             }
 
-            characterList.addEventListener('click', handleCharacterSelection);
-            backButton.addEventListener('click', handleBackToSelection);
-            statsContainer.addEventListener('click', handleStatChange);
-            hauntToggle.addEventListener('change', handleHauntToggle);
-            resetAppButton.addEventListener('click', () => {
-                showModal(
-                    "确定要重置所有进度吗？此操作无法撤销。",
-                    resetApp
-                );
+            dom.characterList.addEventListener('click', handleCharacterSelection);
+            dom.backButton.addEventListener('click', handleBackToSelection);
+            dom.statsGrid.addEventListener('click', handleStatChange);
+            dom.hauntToggle.addEventListener('change', handleHauntToggle);
+            dom.resetAppButton.addEventListener('click', () => {
+                showModal("确定要重置所有进度吗？此操作无法撤销。", resetApp);
             });
-            modalCancel.addEventListener('click', hideModal);
+            dom.modalCancel.addEventListener('click', hideModal);
         });
-
     </script>
 </body>
 </html>
