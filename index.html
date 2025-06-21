@@ -13,62 +13,33 @@
             font-family: 'Noto Sans SC', sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
-        .scale-track-container {
-            width: 100%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-        }
-        .scale-track-container::before, .scale-track-container::after {
-            position: absolute;
-            font-size: 0.875rem;
-            color: rgba(107, 114, 128, 0.5);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        .scale-track-container.has-more-left::before {
-            content: '...';
-            left: 0;
-            opacity: 1;
-        }
-        .scale-track-container.has-more-right::after {
-            content: '...';
-            right: 0;
-            opacity: 1;
-        }
-        .scale-window {
-            width: calc(5 * 2rem + 4 * 0.25rem);
-            overflow: hidden;
-        }
-        .scale-track {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            transition: transform 0.3s ease-in-out;
-        }
+        /* [FINAL UI] Reverted to 2x2 Grid with Final Highlighting Scheme */
         .stat-scale-value {
             flex-shrink: 0;
             transition: all 0.2s ease-in-out;
-            width: 2rem;
-            height: 2rem;
-            font-size: 1rem;
-            line-height: 2rem;
-            color: #6b7280;
+            width: 1.75rem;
+            height: 1.75rem;
+            font-size: 0.875rem;
+            line-height: 1.75rem;
+            color: #6b7280; /* Dimmed text for non-current numbers */
+            position: relative;
         }
         .current-scale-value {
-            transform: scale(1.25);
+            transform: scale(1.1);
             font-weight: 700;
-            color: #ffffff !important;
+            color: #ffffff !important; /* Bright white text */
             background-color: var(--theme-highlight, rgba(255, 255, 255, 0.2));
-            box-shadow: 0 0 12px var(--character-color, #fff);
+            box-shadow: 0 0 10px var(--character-color, #fff);
         }
-        /* [REVISED] Initial value is now a clean underline */
-        .start-scale-value {
-            text-decoration: underline;
-            text-decoration-color: #22c55e;
-            text-decoration-thickness: 2px;
-            text-underline-offset: 4px;
+        .start-scale-value::after {
+            content: '';
+            position: absolute;
+            bottom: 3px;
+            left: 20%;
+            right: 20%;
+            height: 2px;
+            background-color: #22c55e;
+            border-radius: 1px;
         }
         .skull-scale-value {
              color: #ef4444 !important;
@@ -96,7 +67,7 @@
             transition: max-height 0.5s ease-in-out, margin-top 0.5s ease-in-out, padding-top 0.5s ease-in-out;
         }
         .stats-preview.expanded {
-            max-height: 200px; /* Large enough to fit content */
+            max-height: 200px;
             margin-top: 0.5rem;
             padding-top: 0.5rem;
         }
@@ -133,16 +104,15 @@
 
     <script>
         const STORAGE_KEY = 'betrayalGameState';
-        const APP_VERSION = '8.0'; // Final Polish
+        const APP_VERSION = '12.0'; // Final Stable Version with refined UI
         const STALE_DATA_HOURS = 2;
-        const VISIBLE_SCALE_ITEMS = 5;
 
         const characters = [
             { name: "Darrin Williams (飞毛腿)", color: "border-red-500", bgColor: "bg-red-900", textColor: "text-red-400", themeColor: "rgba(248, 113, 113, 0.7)", themeHighlight: "bg-red-500/30", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 6, 6, 7], start: 4 }, speed: { name: "速度", scale: ['💀', 4, 4, 4, 5, 6, 7, 7, 8], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 3, 3, 4, 5, 5, 5, 7], start: 4 }, sanity: { name: "神志", scale: ['💀', 1, 2, 3, 4, 5, 5, 5, 7], start: 4 }}},
-            { name: "Ox Bellows (莽撞大汉)", color: "border-red-500", bgColor: "bg-red-900", textColor: "text-red-400", themeColor: "rgba(248, 113, 113, 0.7)", themeHighlight: "bg-red-500/30", stats: { might: { name: "力量", scale: ['💀', 4, 5, 5, 6, 6, 7, 8, 8], start: 4 }, speed: { name: "速度", scale: ['💀', 2, 2, 2, 3, 4, 5, 5, 6], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 2, 2, 3, 3, 5, 5, 6], start: 4 }, sanity: { name: "神志", scale: ['💀', 2, 2, 3, 4, 5, 5, 6, 7], start: 4 }}},
+            { name: "Ox Bellows (莽撞大汉)", color: "border-red-500", bgColor: "bg-red-900", textColor: "text-red-400", themeColor: "rgba(248, 113, 113, 0.7)", themeHighlight: "bg-red-500/30", stats: { might: { name: "力量", scale: ['💀', 4, 5, 5, 6, 6, 7, 8, 8], start: 4 }, speed: { name: "速度", scale: ['�', 2, 2, 2, 3, 4, 5, 5, 6], start: 4 }, knowledge: { name: "知识", scale: ['💀', 2, 2, 2, 3, 3, 5, 5, 6], start: 4 }, sanity: { name: "神志", scale: ['💀', 2, 2, 3, 4, 5, 5, 6, 7], start: 4 }}},
             { name: "Prof. Longfellow (睿智教授)", color: "border-green-500", bgColor: "bg-green-900", textColor: "text-green-400", themeColor: "rgba(74, 222, 128, 0.7)", themeHighlight: "bg-green-500/30", stats: { might: { name: "力量", scale: ['💀', 1, 2, 2, 3, 4, 5, 6, 7], start: 3 }, speed: { name: "速度", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 8], start: 3 }, knowledge: { name: "知识", scale: ['💀', 4, 5, 5, 6, 7, 8, 8, 8], start: 3 }, sanity: { name: "神志", scale: ['💀', 1, 3, 3, 4, 5, 6, 7, 8], start: 3 }}},
             { name: "Father Rhinehardt (莱因哈特神父)", color: "border-green-500", bgColor: "bg-green-900", textColor: "text-green-400", themeColor: "rgba(74, 222, 128, 0.7)", themeHighlight: "bg-green-500/30", stats: { might: { name: "力量", scale: ['💀', 1, 2, 2, 4, 4, 5, 5, 6], start: 3 }, speed: { name: "速度", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 7], start: 3 }, knowledge: { name: "知识", scale: ['💀', 1, 3, 3, 4, 5, 6, 8, 8], start: 4 }, sanity: { name: "神志", scale: ['💀', 3, 4, 5, 5, 6, 7, 8, 8], start: 5 }}},
-            { name: "Brandon Jaspers (阳光少年)", color: "border-blue-500", bgColor: "bg-blue-900", textColor: "text-blue-400", themeColor: "rgba(96, 165, 250, 0.7)", themeHighlight: "bg-blue-500/30", stats: { might: { name: "力量", scale: ['�', 2, 3, 3, 4, 5, 6, 7, 8], start: 4 }, speed: { name: "速度", scale: ['💀', 3, 4, 4, 4, 5, 6, 7, 8], start: 3 }, knowledge: { name: "知识", scale: ['💀', 1, 3, 3, 5, 5, 6, 6, 7], start: 4 }, sanity: { name: "神志", scale: ['💀', 3, 3, 3, 4, 5, 6, 7, 8], start: 3 }}},
+            { name: "Brandon Jaspers (阳光少年)", color: "border-blue-500", bgColor: "bg-blue-900", textColor: "text-blue-400", themeColor: "rgba(96, 165, 250, 0.7)", themeHighlight: "bg-blue-500/30", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 6, 7, 8], start: 4 }, speed: { name: "速度", scale: ['💀', 3, 4, 4, 4, 5, 6, 7, 8], start: 3 }, knowledge: { name: "知识", scale: ['💀', 1, 3, 3, 5, 5, 6, 6, 7], start: 4 }, sanity: { name: "神志", scale: ['💀', 3, 3, 3, 4, 5, 6, 7, 8], start: 3 }}},
             { name: "Peter Akimoto (日本男孩)", color: "border-blue-500", bgColor: "bg-blue-900", textColor: "text-blue-400", themeColor: "rgba(96, 165, 250, 0.7)", themeHighlight: "bg-blue-500/30", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 5, 5, 6, 8], start: 3 }, speed: { name: "速度", scale: ['💀', 3, 3, 3, 4, 6, 6, 7, 7], start: 4 }, knowledge: { name: "知识", scale: ['💀', 3, 4, 4, 5, 6, 7, 7, 8], start: 3 }, sanity: { name: "神志", scale: ['💀', 3, 4, 4, 5, 6, 6, 7, 8], start: 3 }}},
             { name: "Zoe Ingstrom (古怪女孩)", color: "border-yellow-400", bgColor: "bg-yellow-900", textColor: "text-yellow-400", themeColor: "rgba(250, 204, 21, 0.7)", themeHighlight: "bg-yellow-400/30", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 4, 4, 5, 6, 8], start: 4 }, speed: { name: "速度", scale: ['💀', 3, 3, 4, 4, 4, 5, 6, 8], start: 3 }, knowledge: { name: "知识", scale: ['💀', 1, 2, 3, 4, 4, 5, 5, 5], start: 3 }, sanity: { name: "神志", scale: ['💀', 3, 4, 5, 5, 6, 6, 7, 8], start: 2 }}},
             { name: "Missy Dubourde (邻家女孩)", color: "border-yellow-400", bgColor: "bg-yellow-900", textColor: "text-yellow-400", themeColor: "rgba(250, 204, 21, 0.7)", themeHighlight: "bg-yellow-400/30", stats: { might: { name: "力量", scale: ['💀', 2, 3, 3, 3, 4, 5, 6, 7], start: 3 }, speed: { name: "速度", scale: ['💀', 3, 4, 4, 5, 6, 6, 6, 7], start: 2 }, knowledge: { name: "知识", scale: ['💀', 2, 3, 4, 4, 5, 6, 6, 6], start: 3 }, sanity: { name: "神志", scale: ['💀', 1, 2, 3, 4, 5, 5, 6, 7], start: 4 }}},
@@ -194,10 +164,7 @@
 
         function render() {
             try {
-                let modalHTML = `
-                    <div class="confirmation-modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden opacity-0">
-                        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center shadow-lg"><h3 class="text-lg font-bold mb-4">确认操作</h3><p class="modal-message text-gray-300 mb-6"></p><div class="flex justify-center space-x-4"><button data-action="modal-cancel" class="modal-cancel-btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded transition-colors w-24">取消</button><button data-action="modal-confirm" class="modal-confirm-btn bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded transition-colors w-24">确认</button></div></div>
-                    </div>`;
+                let modalHTML = `<div class="confirmation-modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden opacity-0"><div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm text-center shadow-lg"><h3 class="text-lg font-bold mb-4">确认操作</h3><p class="modal-message text-gray-300 mb-6"></p><div class="flex justify-center space-x-4"><button data-action="modal-cancel" class="modal-cancel-btn bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-4 rounded transition-colors w-24">取消</button><button data-action="modal-confirm" class="modal-confirm-btn bg-red-600 hover:bg-red-500 text-white font-bold py-2 px-4 rounded transition-colors w-24">确认</button></div></div></div>`;
 
                 if (state.selectedCharacterIndex === null) {
                     const displayOrder = [0, 1, 6, 7, 2, 3, 4, 5, 10, 11, 8, 9];
@@ -209,19 +176,12 @@
                             statsPreviewHTML += '<ul class="text-xs text-left space-y-1">';
                             for (const statKey in charData.stats) {
                                 const stat = charData.stats[statKey];
-                                const statValues = stat.scale.map((val, idx) => {
-                                    if (idx === stat.start) return `<span class="text-green-400 font-bold">${val}</span>`;
-                                    return val;
-                                }).join(', ');
+                                const statValues = stat.scale.map((val, idx) => (idx === stat.start) ? `<span class="text-green-400 font-bold">${val}</span>` : val).join(', ');
                                 statsPreviewHTML += `<li><strong class="text-gray-300">${stat.name}:</strong> <span class="text-gray-400">${statValues}</span></li>`;
                             }
                             statsPreviewHTML += '</ul>';
                         }
-
-                        return `<div class="character-card p-4 rounded-lg transition-all duration-300 border-2 ${charData.color} ${charData.bgColor} ${isExpanded ? 'scale-105' : 'hover:scale-105'}" data-index="${i}">
-                                    <h3 class="font-bold text-center text-lg">${charData.name}</h3>
-                                    <div class="stats-preview ${isExpanded ? 'expanded' : ''}"><div class="pt-2 border-t border-gray-600/50">${statsPreviewHTML}</div></div>
-                                </div>`;
+                        return `<div class="character-card p-4 rounded-lg transition-all duration-300 border-2 ${charData.color} ${charData.bgColor} ${isExpanded ? 'scale-105' : 'hover:scale-105'}" data-index="${i}"><h3 class="font-bold text-center text-lg">${charData.name}</h3><div class="stats-preview ${isExpanded ? 'expanded' : ''}"><div class="pt-2 border-t border-gray-600/50">${statsPreviewHTML}</div></div></div>`;
                     }).join('');
                     
                     appContainer.innerHTML = `<div class="p-4"><header class="text-center mb-6 relative"><h1 class="text-3xl font-bold text-red-500 tracking-wider">山中小屋</h1><p class="text-xl text-gray-300">角色属性追踪器</p><button data-action="reset-app" title="重置所有数据" class="absolute top-0 right-0 p-2 text-gray-400 hover:text-white transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 4l16 16" /></svg></button></header><div class="grid grid-cols-2 md:grid-cols-3 gap-4">${characterCardsHTML}</div></div>${modalHTML}`;
@@ -259,34 +219,17 @@
                                     </div>
                                     <button class="text-4xl font-light px-6 py-4 rounded-full ${!canIncrease ? 'btn-disabled' : 'hover:bg-gray-700'}" data-op="increase" ${!canIncrease ? 'disabled' : ''}>+</button>
                                 </div>
-                                <div class="scale-track-container" data-min-value="${statData.scale[0]}" data-max-value="${statData.scale[statData.scale.length - 1]}">
-                                    <div class="scale-track-underline"></div>
-                                    <div class="scale-window">
-                                        <div class="scale-track" style="transform: translateX(0px)">${scaleHTML}</div>
-                                    </div>
-                                </div>
+                                <div class="flex justify-center space-x-1 flex-wrap">${scaleHTML}</div>
                             </div>`;
                     }).join('');
 
                     appContainer.innerHTML = `
                         <div class="flex flex-col h-screen max-h-screen p-4">
-                             <header class="flex-shrink-0">
-                                <div class="flex items-center justify-between"><button data-action="back" class="p-2 -ml-2 text-blue-400 hover:text-blue-300 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><div class="flex items-center space-x-2"><span class="text-sm transition-colors duration-200 ${turnedOn ? 'text-red-400' : 'text-gray-400'}">作祟?</span><label class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" data-action="toggle-haunt" class="sr-only" ${turnedOn ? 'checked' : ''}><div class="toggle-bg block ${turnedOn ? 'bg-red-600' : 'bg-gray-600'} w-10 h-6 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform" style="transform: ${turnedOn ? 'translateX(100%)' : 'translateX(0)'};"></div></div></label></div></div>
-                                <div class="text-center py-2 my-2"><h2 class="text-2xl font-bold ${character.textColor}">${character.name}</h2></div><div class="border-b-2 ${character.color} my-2"></div>
-                            </header>
+                             <header class="flex-shrink-0"><div class="flex items-center justify-between"><button data-action="back" class="p-2 -ml-2 text-blue-400 hover:text-blue-300 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg></button><div class="flex items-center space-x-2"><span class="text-sm transition-colors duration-200 ${turnedOn ? 'text-red-400' : 'text-gray-400'}">作祟?</span><label class="flex items-center cursor-pointer"><div class="relative"><input type="checkbox" data-action="toggle-haunt" class="sr-only" ${turnedOn ? 'checked' : ''}><div class="toggle-bg block ${turnedOn ? 'bg-red-600' : 'bg-gray-600'} w-10 h-6 rounded-full"></div><div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform" style="transform: ${turnedOn ? 'translateX(100%)' : 'translateX(0)'};"></div></div></label></div></div><div class="text-center py-2 my-2"><h2 class="text-2xl font-bold ${character.textColor}">${character.name}</h2></div><div class="border-b-2 ${character.color} my-2"></div></header>
                             <main class="grid grid-cols-2 gap-3 flex-grow">${statsHTML}</main>
                             <footer class="text-center mt-4 flex-shrink-0"><p class="text-xl font-bold text-red-500 h-8">${isDead ? '角色已死亡' : ''}</p></footer>
                         </div>
                         ${modalHTML}`;
-                    
-                     Object.keys(character.stats).forEach(statKey => {
-                        const track = appContainer.querySelector(`[data-stat-key="${statKey}"] .scale-track`);
-                        const currentIndex = state.currentStatIndices[statKey];
-                        const itemWidthWithGap = 36;
-                        const centerOffset = 2;
-                        const scrollAmount = (currentIndex - centerOffset) * itemWidthWithGap * -1;
-                        if(track) track.style.transform = `translateX(${scrollAmount}px)`;
-                    });
                 }
             } catch (error) {
                 console.error("Error during render:", error);
@@ -324,25 +267,13 @@
 
                 if (characterCard) {
                     const index = parseInt(characterCard.dataset.index, 10);
-                    // Tap to expand, tap again to select
                     if (state.expandedIndex === index) {
-                        if (state.selectedCharacterIndex !== null && index !== state.selectedCharacterIndex) {
-                            showModal("选择新角色将清空当前进度。确定吗？", () => {
-                                 state = { expandedIndex: null, selectedCharacterIndex: index, hauntStarted: false, currentStatIndices: {} };
-                                 const char = characters[index];
-                                 Object.keys(char.stats).forEach(statKey => { state.currentStatIndices[statKey] = char.stats[statKey].start; });
-                                 pendingChanges = {};
-                                 saveState();
-                                 render();
-                            });
-                        } else if (state.selectedCharacterIndex === null) {
-                             state = { expandedIndex: null, selectedCharacterIndex: index, hauntStarted: false, currentStatIndices: {} };
-                             const char = characters[index];
-                             Object.keys(char.stats).forEach(statKey => { state.currentStatIndices[statKey] = char.stats[statKey].start; });
-                             pendingChanges = {};
-                             saveState();
-                             render();
-                        }
+                        state = { expandedIndex: null, selectedCharacterIndex: index, hauntStarted: false, currentStatIndices: {} };
+                        const char = characters[index];
+                        Object.keys(char.stats).forEach(statKey => { state.currentStatIndices[statKey] = char.stats[statKey].start; });
+                        pendingChanges = {};
+                        saveState();
+                        render();
                     } else {
                         state.expandedIndex = index;
                         render();
